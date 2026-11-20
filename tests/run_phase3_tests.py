@@ -1,4 +1,4 @@
-"""Ticket-03 functional smoke tests for Godot headless v1.2.
+"""Ticket-03 functional smoke tests for Godot headless v1.3 (retains Ticket-03 behavior).
 Uses temporary scenario and JSONL files; never modifies gameplay output.
 """
 from __future__ import annotations
@@ -36,10 +36,10 @@ def main():
     demand(GODOT and Path(GODOT).exists(),'Godot not found. In PowerShell: $env:GODOT = (Get-Command godot).Source')
     contract=json.loads(CONTRACT.read_text(encoding='utf8'))
     t=contract['tuning']
-    demand(contract['contract_version']=='1.2','contract_version must be 1.2')
+    demand(contract['contract_version']=='1.3','Phase 4 contract_version must be 1.3')
     demand([t[f'night{i}_duration_s'] for i in (1,2,3)]==[240,270,300],'night durations incorrect')
     demand(all(t[k]==v for k,v in {'fuel_max':100,'fuel_per_mote':10,'relight_cost':5,'win_ratio':0.6,'capacity_max':20}.items()),'v1.2 tuning incomplete')
-    print('PASS: contract v1.2, updated durations and tuning')
+    print('PASS: contract v1.3, preserved Phase 3 durations and tuning')
     # A fully fuelled lantern burns 1 unit/second and does not end the night early.
     a=run(scenario({'lanterns':[{'id':'L1','lit':True,'fuel':100}]}),60)
     demand(last(a)['lanterns'][0]['fuel']==99.0,'fuel decay: expected 99 after 60 ticks')

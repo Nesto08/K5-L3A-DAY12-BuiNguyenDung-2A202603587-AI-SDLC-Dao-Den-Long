@@ -1,0 +1,12 @@
+{
+  "avg_fps": 476.998743903308,
+  "contract_version": "1.3",
+  "frame_ms_p95": 2.746,
+  "frames": 14310,
+  "load_ms": 231,
+  "os": "Windows",
+  "p1_low_fps": 285.195953386306,
+  "peak_mem_mb": 263.0,
+  "renderer": "gl_compatibility",
+  "vsync_off": true
+}

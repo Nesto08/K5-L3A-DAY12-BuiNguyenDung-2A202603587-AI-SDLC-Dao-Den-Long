@@ -1,4 +1,6 @@
-"""Phase 2 smoke/regression checks. Requires Godot 4 available on PATH.
+"""Phase 2 retained smoke/regression checks under Phase 4 Contract 1.3.
+Replaced rules: durations 240/270/300, light score 150, not old 300/330/360 or 200.
+Requires Godot 4 available on PATH.
 Does not edit or fake any test output.
 """
 import json
@@ -32,8 +34,8 @@ def run(night=1, ticks=60, scenario=None, inputs=None, seed=41):
 
 def test_main():
     contract = json.loads((ROOT/'game.contract.json').read_text(encoding='utf-8'))
-    assert contract['contract_version'] == '1.1'
-    for night, n_lamps, duration in [(1,5,300),(2,6,330),(3,7,360)]:
+    assert contract['contract_version'] == '1.3'
+    for night, n_lamps, duration in [(1,5,240),(2,6,270),(3,7,300)]:
         trace = run(night=night,ticks=60,scenario={'random_motes':False,'random_shades':False,'random_drifters':False})
         start = trace[0]
         assert start['type'] == 'snapshot' and start['tick'] == 0 and start['sim_tick'] == 0
@@ -41,7 +43,7 @@ def test_main():
         assert abs(start['time_left_s']-duration)<0.01
         assert len(start['drifters']) == 0 and start['motes_active'] == 0
         assert trace[-1]['type']=='end' and trace[-1]['ticks']==60
-    print('PASS: three nights and contract v1.1')
+    print('PASS: Phase 2 three-night counts under contract v1.3')
 
     scenario = {'random_motes':False,'random_shades':False,'random_drifters':False,
                 'player':{'pos':[0,0,25],'carried':10},'lanterns':[{'id':'L1','deposited':0,'lit':False}]}
@@ -50,8 +52,8 @@ def test_main():
     events = [row for row in trace if row['type']=='event']
     assert any(e['name']=='deposit' and e['tick']==1 for e in events)
     assert any(e['name']=='lantern_lit' for e in events)
-    assert trace[-1]['score']==200, trace[-1]
-    print('PASS: deposit 10, light lantern, 10*10+100 score')
+    assert trace[-1]['score']==150, trace[-1]
+    print('PASS: deposit 10, light lantern, 10*5+100 score (Phase 3 rule)')
 
     scenario = {'random_motes':False,'random_shades':False,'random_drifters':False,
                 'player':{'pos':[0,0,0],'carried':3},'shades':[{'id':'S1','pos':[2,0,0]}]}
