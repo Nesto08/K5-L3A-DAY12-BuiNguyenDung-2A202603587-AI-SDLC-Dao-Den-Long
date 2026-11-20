@@ -1,0 +1,10 @@
+﻿# Godot cache
+.godot/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Temporary files
+*.tmp
