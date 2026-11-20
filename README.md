@@ -1,110 +1,103 @@
-﻿# Phase 1 — Đảo Đèn Lồng
+# Day 12 — AI SDLC: Đảo Đèn Lồng
 
-Hướng dẫn chạy, điều khiển, luật và kiểm thử: [README_PHASE1.md](README_PHASE1.md).
-
----
-
-# Day 12 â€” AI SDLC: Äáº£o ÄÃ¨n Lá»“ng
-
-> **CÃ¡ nhÃ¢n** (1 ngÆ°á»i / 1 MSSV) Â· Ãp dá»¥ng SDLC cÃ¹ng AI Ä‘á»ƒ xÃ¢y má»™t **game 3D** qua **4 phase**, tá»« yÃªu cáº§u ban Ä‘áº§u tá»›i báº£n phÃ¡t hÃ nh.
-> **Lab board + trá»£ giáº£ng:** **[Äáº£o ÄÃ¨n Lá»“ng Lab](https://claude.ai/artifact/Q1RYyv1dxjUczzCbd2ZnoW)**
+> **Cá nhân** (1 người / 1 MSSV) · Áp dụng SDLC cùng AI để xây một **game 3D** qua **4 phase**, từ yêu cầu ban đầu tới bản phát hành.
+> **Lab board + trợ giảng:** **[Đảo Đèn Lồng Lab](https://claude.ai/artifact/Q1RYyv1dxjUczzCbd2ZnoW)**
 
 ---
 
-## TÃ i liá»‡u cá»§a lab
+## Tài liệu của lab
 
-| File | Ná»™i dung |
+| File | Nội dung |
 |---|---|
-| [GUIDE.md](GUIDE.md) | HÆ°á»›ng dáº«n lÃ m lab: vÃ²ng lÃ m viá»‡c má»—i phase, harness, kiá»ƒm chá»©ng, token |
-| [CHECKPOINTS.md](CHECKPOINTS.md) | CÃ¡c má»‘c tá»± kiá»ƒm tra tá»« chuáº©n bá»‹ Ä‘áº¿n ná»™p bÃ i |
-| [SUBMISSION.md](SUBMISSION.md) | Äáº·t tÃªn repo, háº¡n ná»™p, tag, Release, video, checklist |
-| [RULES.md](RULES.md) | Quy Ä‘á»‹nh: AI, trung thá»±c vá» báº±ng chá»©ng, báº£n quyá»n, báº£o máº­t |
-| [RUBRIC.md](RUBRIC.md) | Thang Ä‘iá»ƒm chi tiáº¿t |
+| [GUIDE.md](GUIDE.md) | Hướng dẫn làm lab: vòng làm việc mỗi phase, harness, kiểm chứng, token |
+| [CHECKPOINTS.md](CHECKPOINTS.md) | Các mốc tự kiểm tra từ chuẩn bị đến nộp bài |
+| [SUBMISSION.md](SUBMISSION.md) | Đặt tên repo, hạn nộp, tag, Release, video, checklist |
+| [RULES.md](RULES.md) | Quy định: AI, trung thực về bằng chứng, bản quyền, bảo mật |
+| [RUBRIC.md](RUBRIC.md) | Thang điểm chi tiết |
 
 ## Lab board
 
-YÃªu cáº§u dá»± Ã¡n Ä‘Æ°á»£c phÃ¡t hÃ nh táº¡i **[Äáº£o ÄÃ¨n Lá»“ng Lab](https://claude.ai/artifact/Q1RYyv1dxjUczzCbd2ZnoW)**. Má»—i phase lÃ  má»™t tab (tab chÆ°a phÃ¡t hÃ nh bá»‹ khÃ³a), má»—i tab cÃ³ trá»£ giáº£ng AI riÃªng chá»‰ tráº£ lá»i trong pháº¡m vi phase Ä‘Ã³. Trá»£ giáº£ng cáº§n Ä‘Äƒng nháº­p claude.ai vÃ  dÃ¹ng lÆ°á»£t Claude cá»§a báº¡n.
+Yêu cầu dự án được phát hành tại **[Đảo Đèn Lồng Lab](https://claude.ai/artifact/Q1RYyv1dxjUczzCbd2ZnoW)**. Mỗi phase là một tab (tab chưa phát hành bị khóa), mỗi tab có trợ giảng AI riêng chỉ trả lời trong phạm vi phase đó. Trợ giảng cần đăng nhập claude.ai và dùng lượt Claude của bạn.
 
-## Dá»± Ã¡n
+## Dự án
 
-**Äáº£o ÄÃ¨n Lá»“ng**: game 3D gÃ³c nhÃ¬n thá»© ba. MÃ¢y, ngÆ°á»i giá»¯ Ä‘Ã¨n nhá» tuá»•i, gom Ä‘om Ä‘Ã³m Ä‘á»ƒ tháº¯p láº¡i cÃ¡c ÄÃ¨n Lá»“ng Lá»›n vÃ  nÃ© BÃ³ng Má»±c trong sÆ°Æ¡ng Ä‘en.
+**Đảo Đèn Lồng**: game 3D góc nhìn thứ ba. Mây, người giữ đèn nhỏ tuổi, gom đom đóm để thắp lại các Đèn Lồng Lớn và né Bóng Mực trong sương đen.
 
-- KhÃ´ng rÃ ng buá»™c cÃ´ng nghá»‡; cháº¡y Ä‘Æ°á»£c trÃªn macOS hoáº·c Linux.
-- TuÃ¢n theo **Test Contract** (cháº¿ Ä‘á»™ headless) Ä‘á»ƒ Ä‘Æ°á»£c cháº¥m tá»± Ä‘á»™ng vÃ  so sÃ¡nh vá»›i nhau.
+- Không ràng buộc công nghệ; chạy được trên macOS hoặc Linux.
+- Tuân theo **Test Contract** (chế độ headless) để được chấm tự động và so sánh với nhau.
 
-| Phase | Báº¡n nháº­n | Ná»™p |
+| Phase | Bạn nhận | Nộp |
 |---|---|---|
-| 1 | **PRD-0** (mÃ´ táº£ tá»•ng quÃ¡t) + Test Contract | tag `phase-1` |
-| 2 | **Ticket-02**, phÃ¡t hÃ nh khi Phase 1 káº¿t thÃºc | tag `phase-2` |
-| 3 | **Ticket-03**, phÃ¡t hÃ nh khi Phase 2 káº¿t thÃºc | tag `phase-3` |
-| 4 | **Ticket-04**, phÃ¡t hÃ nh khi Phase 3 káº¿t thÃºc | tag `phase-4` + Release `v1.0.0` |
+| 1 | **PRD-0** (mô tả tổng quát) + Test Contract | tag `phase-1` |
+| 2 | **Ticket-02**, phát hành khi Phase 1 kết thúc | tag `phase-2` |
+| 3 | **Ticket-03**, phát hành khi Phase 2 kết thúc | tag `phase-3` |
+| 4 | **Ticket-04**, phát hành khi Phase 3 kết thúc | tag `phase-4` + Release `v1.0.0` |
 
-YÃªu cáº§u sáº½ Ä‘Æ°á»£c bá»• sung vÃ  cÃ³ thá»ƒ thay Ä‘á»•i giá»¯a cÃ¡c phase, giá»‘ng dá»± Ã¡n tháº­t.
+Yêu cầu sẽ được bổ sung và có thể thay đổi giữa các phase, giống dự án thật.
 
-### Lá»‹ch 4 giá»
+### Lịch 4 giờ
 
-BÃ i lab kÃ©o dÃ i **4 giá»**. Phase 1 vÃ  2 khoáº£ng **1 giá»**, Phase 3 khoáº£ng **30 phÃºt**, Phase 4 khoáº£ng **1 giá» 30 phÃºt**. Má»—i phase phÃ¡t hÃ nh Ä‘Ãºng má»‘c giá». Phase má»›i xuáº¥t hiá»‡n trÃªn lab board khi tá»›i má»‘c.
+Bài lab kéo dài **4 giờ**. Phase 1 và 2 khoảng **1 giờ**, Phase 3 khoảng **30 phút**, Phase 4 khoảng **1 giờ 30 phút**. Mỗi phase phát hành đúng mốc giờ. Phase mới xuất hiện trên lab board khi tới mốc.
 
-| Má»‘c | Sá»± kiá»‡n | Háº¡n tag |
+| Mốc | Sự kiện | Hạn tag |
 |---|---|---|
-| 0h | PhÃ¡t hÃ nh **Phase 1** (PRD-0), gá»“m cáº£ pháº§n chuáº©n bá»‹ | `phase-1` trÆ°á»›c má»‘c 1h |
-| 1h | PhÃ¡t hÃ nh **Phase 2** | `phase-2` trÆ°á»›c má»‘c 2h |
-| 2h | PhÃ¡t hÃ nh **Phase 3** | `phase-3` trÆ°á»›c má»‘c 2h30 |
-| 2h30 | PhÃ¡t hÃ nh **Phase 4** | `phase-4`, Release `v1.0.0` vÃ  video trÆ°á»›c má»‘c 4h |
-| 4h | Háº¿t giá» lab, chá»‘t bÃ i | |
+| 0h | Phát hành **Phase 1** (PRD-0), gồm cả phần chuẩn bị | `phase-1` trước mốc 1h |
+| 1h | Phát hành **Phase 2** | `phase-2` trước mốc 2h |
+| 2h | Phát hành **Phase 3** | `phase-3` trước mốc 2h30 |
+| 2h30 | Phát hành **Phase 4** | `phase-4`, Release `v1.0.0` và video trước mốc 4h |
+| 4h | Hết giờ lab, chốt bài | |
 
-Háº¿t giá» má»—i phase thÃ¬ tag vÃ  chuyá»ƒn sang phase tiáº¿p theo, dÃ¹ phase chÆ°a hoÃ n háº£o. Chá»— chÆ°a xong ghi trung thá»±c trong báº±ng chá»©ng.
+Hết giờ mỗi phase thì tag và chuyển sang phase tiếp theo, dù phase chưa hoàn hảo. Chỗ chưa xong ghi trung thực trong bằng chứng.
 
 ---
 
-## Gá»£i Ã½ SDLC (cÃ¡ch lÃ m lÃ  cá»§a báº¡n)
+## Gợi ý SDLC (cách làm là của bạn)
 
-Má»—i phase lÃ  má»™t vÃ²ng nhá». CÃ´ng cá»¥, thá»© tá»±, Ä‘á»‹nh dáº¡ng tÃ i liá»‡u Ä‘á»u tá»± do; Ä‘Ã¢y chá»‰ lÃ  gá»£i Ã½:
+Mỗi phase là một vòng nhỏ. Công cụ, thứ tự, định dạng tài liệu đều tự do; đây chỉ là gợi ý:
 
-1. **Requirements:** biáº¿n yÃªu cáº§u thÃ nh tiÃªu chÃ­ nghiá»‡m thu kiá»ƒm chá»©ng Ä‘Æ°á»£c. Chá»— mÆ¡ há»“ thÃ¬ tá»± giáº£ Ä‘á»‹nh vÃ  ghi láº¡i.
-2. **Plan:** nghÄ© cÃ¡ch kiá»ƒm chá»©ng **trÆ°á»›c** khi Ä‘á»ƒ agent viáº¿t code.
-3. **Build:** Ä‘á»ƒ agent viáº¿t, báº¡n Ä‘iá»u phá»‘i vÃ  review.
-4. **Verify:** cháº¡y tháº­t, kiá»ƒm tra hÃ nh vi tháº­t. *KhÃ´ng cÃ³ báº±ng chá»©ng thÃ¬ chÆ°a xong*: "agent báº£o cháº¡y rá»“i" khÃ´ng pháº£i báº±ng chá»©ng.
-5. **Evaluate:** cÃ¡i gÃ¬ Ä‘áº¡t, AI sai á»Ÿ Ä‘Ã¢u, harness (AGENTS.md, skill, hook) cáº§n chá»‰nh gÃ¬.
-6. **Release:** gáº¯n tag.
+1. **Requirements:** biến yêu cầu thành tiêu chí nghiệm thu kiểm chứng được. Chỗ mơ hồ thì tự giả định và ghi lại.
+2. **Plan:** nghĩ cách kiểm chứng **trước** khi để agent viết code.
+3. **Build:** để agent viết, bạn điều phối và review.
+4. **Verify:** chạy thật, kiểm tra hành vi thật. *Không có bằng chứng thì chưa xong*: "agent bảo chạy rồi" không phải bằng chứng.
+5. **Evaluate:** cái gì đạt, AI sai ở đâu, harness (AGENTS.md, skill, hook) cần chỉnh gì.
+6. **Release:** gắn tag.
 
-## Ba Ä‘iá»u cáº§n nhá»›
+## Ba điều cần nhớ
 
-> Báº¡n Ä‘Æ°á»£c **tá»± do sÃ¡ng táº¡o thÃªm** quanh pháº§n lÃµi (nhÃ¢n váº­t, cÆ¡ cháº¿ nhá», cÃ¢u chuyá»‡n, hiá»‡u á»©ng, Ã¢m thanhâ€¦). SÃ¡ng táº¡o gá»n vÃ  khÃ´ng phÃ¡ yÃªu cáº§u Ä‘Æ°á»£c tÃ­nh Ä‘iá»ƒm trong háº¡ng má»¥c F cá»§a [RUBRIC](RUBRIC.md); ghi má»¥c "SÃ¡ng táº¡o cá»§a tÃ´i" trong README cá»§a báº¡n.
+> Bạn được **tự do sáng tạo thêm** quanh phần lõi (nhân vật mới, kẻ địch mới, cơ chế nhỏ, câu chuyện, hiệu ứng, âm thanh…). Sáng tạo gọn và không phá yêu cầu được tính điểm trong hạng mục F của [RUBRIC](RUBRIC.md); ghi mục "Sáng tạo của tôi" trong README của bạn.
 
-- **Game tá»‘t lÃ  game Ä‘Ãºng yÃªu cáº§u cá»§a khÃ¡ch hÃ ng**, khÃ´ng pháº£i game phá»©c táº¡p hay Ä‘áº¹p nháº¥t. LÃ m Ä‘Ãºng vÃ  chá»©ng minh Ä‘Æ°á»£c lÃ  Ä‘Ãºng trÆ°á»›c, trau chuá»‘t sau.
-- **CÃ¢n nháº¯c ká»¹ quota token cá»§a báº¡n.** Äá»‘t nhiá»u token khÃ´ng lÃ m bÃ i tá»‘t hÆ¡n. Ngá»¯ cáº£nh gá»n, káº¿ hoáº¡ch rÃµ, kiá»ƒm chá»©ng sá»›m thÆ°á»ng vá»«a ráº» vá»«a Ä‘Ãºng hÆ¡n cháº¡y agent liÃªn tá»¥c.
-- **Kiá»ƒm chá»©ng lÃ  pháº§n quan trá»ng nháº¥t.** Báº±ng chá»©ng (test, output headless, áº£nh, sá»‘ Ä‘o) Ä‘Ã¡ng giÃ¡ hÆ¡n lá»i mÃ´ táº£.
+- **Game tốt là game đúng yêu cầu của khách hàng**, không phải game phức tạp hay đẹp nhất. Làm đúng và chứng minh được là đúng trước, trau chuốt sau.
+- **Cân nhắc kỹ quota token của bạn.** Đốt nhiều token không làm bài tốt hơn. Ngữ cảnh gọn, kế hoạch rõ, kiểm chứng sớm thường vừa rẻ vừa đúng hơn chạy agent liên tục.
+- **Kiểm chứng là phần quan trọng nhất.** Bằng chứng (test, output headless, ảnh, số đo) đáng giá hơn lời mô tả.
 
 ---
 
-## BÃ n giao cuá»‘i cÃ¹ng
+## Bàn giao cuối cùng
 
-Má»™t **repo GitHub cÃ¡ nhÃ¢n, public**, gá»“m:
+Một **repo GitHub cá nhân, public**, gồm:
 
-1. **ToÃ n bá»™ mÃ£ nguá»“n** cá»§a game qua 4 phase, tag `phase-1` â€¦ `phase-4`, Release `v1.0.0`.
-2. **Video demo `.mp4` dÆ°á»›i 5 phÃºt** (Ä‘Ã­nh kÃ¨m Release `v1.0.0` hoáº·c `docs/demo/demo.mp4`, link á»Ÿ Ä‘áº§u README): chÆ¡i thá»­ vÃ  cho tháº¥y báº±ng chá»©ng game cháº¡y Ä‘Ãºng.
-3. **Báº±ng chá»©ng kiá»ƒm chá»©ng** cá»§a tá»«ng phase (Ä‘á»‹nh dáº¡ng tá»± chá»n).
-4. **Harness AI Ä‘Ã£ dÃ¹ng** (AGENTS.md / CLAUDE.md, skills, hooks, pluginsâ€¦), giá»¯ nguyÃªn trong repo vÃ  lá»‹ch sá»­ git.
-5. **Ghi chÃ©p ngáº¯n:** spec/giáº£ Ä‘á»‹nh má»—i phase, nháº­t kÃ½ dÃ¹ng AI (gá»“m token/chi phÃ­ Æ°á»›c tÃ­nh), retro.
+1. **Toàn bộ mã nguồn** của game qua 4 phase, tag `phase-1` … `phase-4`, Release `v1.0.0`.
+2. **Video demo `.mp4` dưới 5 phút** (đính kèm Release `v1.0.0` hoặc `docs/demo/demo.mp4`, link ở đầu README): chơi thử và cho thấy bằng chứng game chạy đúng.
+3. **Bằng chứng kiểm chứng** của từng phase (định dạng tự chọn).
+4. **Harness AI đã dùng** (AGENTS.md / CLAUDE.md, skills, hooks, plugins…), giữ nguyên trong repo và lịch sử git.
+5. **Ghi chép ngắn:** spec/giả định mỗi phase, nhật ký dùng AI (gồm token/chi phí ước tính), retro.
 
-KhÃ´ng commit API key, token hay `.env`. Gá»­i link repo theo hÆ°á»›ng dáº«n cá»§a Coach.
+Không commit API key, token hay `.env`. Gửi link repo theo hướng dẫn của Coach.
 
-## ÄÃ¡nh giÃ¡ (100 Ä‘iá»ƒm)
+## Đánh giá (100 điểm)
 
-| Háº¡ng má»¥c | Äiá»ƒm |
+| Hạng mục | Điểm |
 |---|---|
-| Test tá»± Ä‘á»™ng áº©n (headless, gá»“m kiá»ƒm tra láº¡i phase trÆ°á»›c) | 30 |
-| Kiá»ƒm chá»©ng & báº±ng chá»©ng cá»§a báº¡n | 20 |
-| Quy trÃ¬nh SDLC & harness AI | 15 |
-| Evaluation & retro (gá»“m cÃ¡ch báº¡n dÃ¹ng token) | 10 |
-| Hiá»‡u nÄƒng & á»•n Ä‘á»‹nh | 10 |
-| Cháº¥t lÆ°á»£ng sáº£n pháº©m (Ä‘Ãºng yÃªu cáº§u, chÆ¡i Ä‘Æ°á»£c) | 10 |
+| Test tự động ẩn (headless, gồm kiểm tra lại phase trước) | 30 |
+| Kiểm chứng & bằng chứng của bạn | 20 |
+| Quy trình SDLC & harness AI | 15 |
+| Evaluation & retro (gồm cách bạn dùng token) | 10 |
+| Hiệu năng & ổn định | 10 |
+| Chất lượng sản phẩm (đúng yêu cầu, chơi được) | 10 |
 | Video demo | 5 |
 
-## Quy Ä‘á»‹nh
+## Quy định
 
-- DÃ¹ng AI thoáº£i mÃ¡i; khÃ´ng sao chÃ©p repo cá»§a ngÆ°á»i khÃ¡c.
-- Báº±ng chá»©ng pháº£i tháº­t: test luÃ´n Ä‘áº¡t hay output sá»­a tay lÃ  vi pháº¡m.
-- NhÃ¢n váº­t, bá»‘i cáº£nh lÃ  báº£n gá»‘c cá»§a lab; asset bÃªn ngoÃ i chá»‰ dÃ¹ng loáº¡i CC0/CC-BY/MIT hoáº·c tá»± táº¡o, ghi nguá»“n trong `CREDITS.md`.
-
+- Dùng AI thoải mái; không sao chép repo của người khác.
+- Bằng chứng phải thật: test luôn đạt hay output sửa tay là vi phạm.
+- Nhân vật, bối cảnh là bản gốc của lab; asset bên ngoài chỉ dùng loại CC0/CC-BY/MIT hoặc tự tạo, ghi nguồn trong `CREDITS.md`.
