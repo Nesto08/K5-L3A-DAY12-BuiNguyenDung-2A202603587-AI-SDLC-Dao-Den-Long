@@ -19,8 +19,12 @@ var selected_night: int = 1
 var started: bool = false
 var paused_ui: bool = false
 var game_root: Node3D
+var accessible_colors: bool = false
+var settings_store: ConfigFile = ConfigFile.new()
 
 func _ready() -> void:
+    if settings_store.load("user://lantern_settings.cfg") == OK:
+        accessible_colors = bool(settings_store.get_value("accessibility","distinguishable_colors",false))
     _build_ui()
     _show_menu()
     Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
@@ -73,7 +77,7 @@ func _build_ui() -> void:
     # Keep status text readable against the 3D world without covering play area.
     var hud_background := ColorRect.new()
     hud_background.position = Vector2(12, 10)
-    hud_background.size = Vector2(820, 174)
+    hud_background.size = Vector2(900, 155)
     hud_background.color = Color(0.055, 0.06, 0.13, 0.78)
     hud_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
     canvas.add_child(hud_background)
@@ -82,7 +86,7 @@ func _build_ui() -> void:
     hud.add_theme_font_size_override("font_size", 18)
     canvas.add_child(hud)
     banner = Label.new()
-    banner.position = Vector2(24, 195)
+    banner.position = Vector2(24, 177)
     banner.add_theme_font_size_override("font_size", 21)
     canvas.add_child(banner)
     menu = Control.new()
@@ -101,9 +105,6 @@ func _build_ui() -> void:
     title.text = "ĐẢO ĐÈN LỒNG — BA HÒN ĐẢO"
     title.add_theme_font_size_override("font_size",38)
     panel.add_child(title)
-    var info := Label.new()
-    info.text = "WASD: Đi  |  Space: Nhảy  |  Shift: Lướt  |  E: Nạp đèn  |  Q: Tỏa Sáng\nR: Chơi lại  |  Esc: Tạm dừng / trở về game  |  Chuột: Xoay camera"
-    panel.add_child(info)
     for index in range(1,4):
         var button := Button.new()
         button.text = "Chơi Đêm %d — %s" % [index,["Đảo Bến","Đảo Cầu","Đảo Chuông"][index-1]]
@@ -114,9 +115,16 @@ func _build_ui() -> void:
     resume.text = "Tiếp tục (Esc)"
     resume.pressed.connect(_resume)
     panel.add_child(resume)
-    var settings := Label.new()
-    settings.text = "Cài đặt: dùng thiết lập âm thanh / độ phân giải của Godot.\nGame chạy ở 60 tick/s; game core và headless dùng chung logic."
-    panel.add_child(settings)
+    var accessibility := CheckBox.new()
+    accessibility.text = "Bảng màu dễ phân biệt (lưu tự động)"
+    accessibility.button_pressed = accessible_colors
+    accessibility.toggled.connect(_set_accessible_colors)
+    panel.add_child(accessibility)
+
+func _set_accessible_colors(enabled: bool) -> void:
+    accessible_colors = enabled
+    settings_store.set_value("accessibility","distinguishable_colors",enabled)
+    settings_store.save("user://lantern_settings.cfg")
 
 func _show_menu() -> void:
     menu.visible = true
@@ -209,7 +217,9 @@ func _build_world() -> void:
         light.light_color = Color("ffbf61")
         light.omni_range = 12
         post.add_child(light)
-        lantern_visuals[id] = {"orb":orb,"light":light}
+        var bar := _box(post,Vector3(0.14,1.0,0.14),Vector3(0.8,1.4,0),Color("87d981"))
+        var worn := _box(post,Vector3(0.85,0.025,0.85),Vector3(0,2.72,0),Color("a9a0a0"))
+        lantern_visuals[id] = {"orb":orb,"light":light,"bar":bar,"worn":worn}
     _sync_visuals()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -247,8 +257,18 @@ func _sync_visuals() -> void:
         var id: String = str(lantern["id"])
         var visuals: Dictionary = lantern_visuals[id]
         var lit: bool = bool(lantern["lit"])
-        visuals["orb"].material_override = _material(Color("ffca64") if lit else Color("71607e"),lit)
-        visuals["light"].light_energy = 1.8 if lit else 0
+        var low_fuel: bool = lit and float(lantern["fuel"]) < 30.0
+        var blink: bool = low_fuel and int(Time.get_ticks_msec()/500) % 2 == 0
+        var off_color: Color = Color("333743") if accessible_colors else Color("71607e")
+        var lit_color: Color = Color("ffe9a7") if accessible_colors else Color("ffca64")
+        visuals["orb"].material_override = _material(off_color if not lit or blink else lit_color,lit and not blink)
+        visuals["light"].light_energy = 1.8 if lit and not blink else 0
+        var height: float = maxf(0.03,float(lantern["fuel"])/100.0)
+        visuals["bar"].scale.y = height
+        visuals["bar"].position.y = 0.9+0.5*height
+        visuals["bar"].visible = lit
+        visuals["bar"].material_override = _material(Color("ffffff") if accessible_colors else (Color("ff6d6d") if low_fuel else Color("87d981")))
+        visuals["worn"].visible = not lit
     var active_motes: Dictionary = {}
     for mote in game.motes:
         var id: String = str(mote["id"])
@@ -268,6 +288,10 @@ func _sync_visuals() -> void:
             shade_visuals[id] = node
         shade_visuals[id].position = shade["pos"]
         shade_visuals[id].scale = Vector3.ONE*(0.8 if shade["state"] == "stunned" else 1)
+        for child in shade_visuals[id].get_children():
+            if child is MeshInstance3D:
+                var shade_color: Color = Color("00b3ff") if accessible_colors else Color("24132e")
+                child.material_override = _material(shade_color)
     for drifter in game.drifters:
         var id: String = str(drifter["id"])
         if not drifter_visuals.has(id):
@@ -280,8 +304,11 @@ func _sync_visuals() -> void:
         charm_visuals[id].visible = bool(charm["active"])
     var progress: String = ""
     for lantern in game.lanterns:
-        progress += str(lantern["id"])+":"+str(lantern["deposited"])+"/10  "
-    hud.text = "ĐẢO ĐÈN LỒNG | ĐÊM %d\nNgọn Lửa: %d  |  Đom đóm: %d/10  |  Đèn: %d/%d\nĐiểm: %d  |  Còn: %.1fs\n%s\nLướt: %.1fs  |  Tỏa Sáng: %.1fs" % [game.night,game.flames,game.carried,game.get_lit_count(),game.lantern_count,game.score,game.get_time_left(),progress,float(game.dash_cooldown)/60.0,float(game.pulse_cooldown)/60.0]
-    if game.state == "won": banner.text = "CHIẾN THẮNG ĐÊM %d! Nhấn R để chơi lại hoặc Esc chọn đêm." % game.night
+        var fuel: float = float(lantern["fuel"])
+        var status: String = ("%3.0f" % fuel) if bool(lantern["lit"]) else ("TẮT (%d)" % int(lantern["deposited"]))
+        progress += "%s:%s  " % [str(lantern["id"]),status]
+    var required: int = int(ceil(float(game.lantern_count)*0.6))
+    hud.text = "ĐẢO ĐÈN LỒNG | ĐÊM %d\nNgọn Lửa: %d | Đom đóm: %d/%d | Đèn đang sáng: %d/%d (cần %d)\nĐiểm: %d | Còn: %.1fs\n%s\nLướt: %.1fs | Tỏa Sáng: %.1fs" % [game.night,game.flames,game.carried,game.get_capacity(),game.get_lit_count(),game.lantern_count,required,game.score,game.get_time_left(),progress,float(game.dash_cooldown)/60.0,float(game.pulse_cooldown)/60.0]
+    if game.state == "won": banner.text = "CHIẾN THẮNG BÌNH MINH! Nhấn R để chơi lại hoặc Esc chọn đêm."
     elif game.state == "lost": banner.text = "THẤT BẠI! Nhấn R để chơi lại hoặc Esc chọn đêm."
-    else: banner.text = ""  # Normal gameplay hint belongs in the menu; no HUD overlap.
+    else: banner.text = ""

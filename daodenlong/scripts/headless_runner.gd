@@ -119,7 +119,7 @@ func validate_scenario(data: Variant) -> bool:
         if p.has("pos") and not valid_pos(p["pos"]): return false
         if p.has("vel") and not valid_pos(p["vel"]): return false
         if p.has("grounded") and not (p["grounded"] is bool): return false
-        for key in ["carried","flames","invuln_ticks","dash_ticks","dash_c_ticks","pulse_cd_ticks","charm_ticks"]:
+        for key in ["carried","flames","invuln_ticks","dash_ticks","dash_c_ticks","pulse_cd_ticks","charm_ticks","successful_lights"]:
             if p.has(key) and not valid_nonnegative_integer(p[key]): return false
     if data.has("lanterns"):
         if not (data["lanterns"] is Array): return false
@@ -132,6 +132,9 @@ func validate_scenario(data: Variant) -> bool:
             if item.has("pos") and not valid_pos(item["pos"]): return false
             if item.has("lit") and not (item["lit"] is bool): return false
             if item.has("deposited") and not valid_nonnegative_integer(item["deposited"]): return false
+            if item.has("ever_lit") and not (item["ever_lit"] is bool): return false
+            if item.has("fuel") and (not is_number(item["fuel"]) or float(item["fuel"]) < 0 or float(item["fuel"]) > 100): return false
+            if item.has("relit_count") and not valid_nonnegative_integer(item["relit_count"]): return false
     for key in ["motes","shades","drifters","charms"]:
         if not data.has(key): continue
         if not (data[key] is Array): return false
@@ -142,6 +145,7 @@ func validate_scenario(data: Variant) -> bool:
             if not (item is Dictionary) or not item.has("pos") or not valid_pos(item["pos"]): return false
             if item.has("id") and not (item["id"] is String): return false
             if item.has("active") and not (item["active"] is bool): return false
+            if item.has("target_lantern_id") and not (item["target_lantern_id"] is String): return false
             for field in ["ttl","stun_ticks","push_ticks","recoil","chase_ticks"]:
                 if item.has(field) and not valid_nonnegative_integer(item[field]): return false
     return true
@@ -173,9 +177,9 @@ func emit_snapshot(game: GameCore) -> void:
     var drifter_json: Array = []
     var charm_json: Array = []
     for item in game.lanterns:
-        lantern_json.append({"id":item["id"],"pos":Core.vec3_json(item["pos"]),"lit":item["lit"],"deposited":item["deposited"]})
+        lantern_json.append({"id":item["id"],"pos":Core.vec3_json(item["pos"]),"lit":item["lit"],"deposited":item["deposited"],"fuel":game._fuel_visible(item),"ever_lit":item["ever_lit"],"relit_count":item["relit_count"]})
     for item in game.shades:
-        shade_json.append({"id":item["id"],"pos":Core.vec3_json(item["pos"]),"state":item["state"],"stun_ticks":item["stun_ticks"],"recoil":item["recoil"]})
+        shade_json.append({"id":item["id"],"pos":Core.vec3_json(item["pos"]),"state":item["state"],"stun_ticks":item["stun_ticks"],"recoil":item["recoil"],"target_lantern_id":item.get("target_lantern_id","")})
     for item in game.motes:
         mote_json.append({"id":item["id"],"pos":Core.vec3_json(item["pos"]),"kind":item.get("kind","random"),"ttl":item.get("ttl",-1)})
     for item in game.drifters:
@@ -186,7 +190,7 @@ func emit_snapshot(game: GameCore) -> void:
         "type":"snapshot","tick":game.tick,"sim_tick":game.sim_tick,"night":game.night,
         "state":game.state,"time_left_s":snappedf(game.get_time_left(),0.001),"score":game.score,
         "player":{"pos":Core.vec3_json(game.player_pos),"vel":[0,snappedf(game.player_velocity_y,0.001),0],"grounded":game.grounded,
-        "flames":game.flames,"carried":game.carried,"invuln_ticks":game.invuln_ticks,
+        "flames":game.flames,"carried":game.carried,"capacity":game.get_capacity(),"invuln_ticks":game.invuln_ticks,
         "dash_ticks":game.dash_ticks,"dash_c_ticks":game.dash_cooldown,"pulse_cd_ticks":game.pulse_cooldown,
         "charm_ticks":game.charm_ticks},
         "lanterns":lantern_json,"shades":shade_json,"motes_active":game.motes.size(),"motes":mote_json,

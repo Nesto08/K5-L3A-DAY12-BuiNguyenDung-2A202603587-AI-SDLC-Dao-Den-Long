@@ -1,7 +1,8 @@
 extends RefCounted
 class_name GameCore
 
-# Day 12 Ticket-02 / deterministic, fixed-60-Hz Game Core.
+# Day 12 Ticket-03 / deterministic, fixed-60-Hz Game Core.
+# Fuel units are integral 1/60 fuel, preserving exact tick arithmetic.
 const TICK_RATE: int = 60
 const DT: float = 1.0 / 60.0
 const PLAYER_SPEED: float = 6.0
@@ -27,12 +28,20 @@ const SHADE_SPEED: float = 4.0
 const SHADE_HIT_RADIUS: float = 1.0
 const INVULN_TICKS: int = 90
 const MAX_FLAMES: int = 3
-const SCORE_PER_DEPOSIT: int = 10
+const SCORE_PER_DEPOSIT: int = 5
 const SCORE_PER_LANTERN: int = 100
 const SCORE_PER_STUN: int = 5
-const SCORE_PER_SECOND_LEFT: int = 2
+const SCORE_PER_SECOND_LEFT: int = 0
 const SCORE_PER_FLAME_LEFT: int = 50
-const NIGHT_DURATIONS: Array = [300.0, 330.0, 360.0]
+const NIGHT_DURATIONS: Array = [240.0, 270.0, 300.0]
+const FUEL_MAX_UNITS: int = 6000
+const FUEL_DECAY_UNITS: int = 1
+const FUEL_DRAIN_UNITS: int = 5
+const FUEL_PER_MOTE_UNITS: int = 600
+const FUEL_SAFE_THRESHOLD_UNITS: int = 1800
+const CAPACITY_MAX: int = 20
+const SCORE_MOTE_V12: int = 5
+const SCORE_RELIGHT: int = 40
 
 var tick: int = 0
 var sim_tick: int = 0
@@ -43,6 +52,7 @@ var player_velocity_y: float = 0.0
 var grounded: bool = true
 var flames: int = MAX_FLAMES
 var carried: int = 0
+var successful_lights: int = 0
 var score: int = 0
 var score_nights: int = 0
 var initial_time_left_s: float = 300.0
@@ -93,6 +103,7 @@ func reset(next_night: int = 1) -> void:
     grounded = true
     flames = MAX_FLAMES
     carried = 0
+    successful_lights = 0
     score = 0
     score_nights = 0
     initial_time_left_s = float(NIGHT_DURATIONS[night - 1])
@@ -139,7 +150,7 @@ func setup_lanterns() -> void:
         locations = [Vector3(0,6,6),Vector3(18,3,10),Vector3(-18,3,10),Vector3(35,0,-10),Vector3(-35,0,-10),Vector3(20,0,-35),Vector3(-20,0,-35)]
     lantern_count = locations.size()
     for i in range(locations.size()):
-        lanterns.append({"id":"L" + str(i + 1),"pos":locations[i],"lit":false,"deposited":0})
+        lanterns.append({"id":"L" + str(i + 1),"pos":locations[i],"lit":false,"deposited":0,"fuel_units":0,"fuel":0.0,"ever_lit":false,"relit_count":0})
 
 func _mote_spawn_points() -> Array[Vector3]:
     var result: Array[Vector3] = []
@@ -201,7 +212,7 @@ func _spawn_mote_batch(count: int, emit_spawn: bool = true) -> void:
         if emit_spawn: emit_event("mote_spawned",{"id":identity,"pos":vec3_json(pos)})
 
 func add_shade(identity: String, pos: Vector3) -> void:
-    shades.append({"id":identity,"pos":pos,"state":"idle","stun_ticks":0,"push_ticks":0,"push_dir":Vector2.ZERO,"recoil":0,"spawn_pos":pos})
+    shades.append({"id":identity,"pos":pos,"state":"wander","stun_ticks":0,"push_ticks":0,"push_dir":Vector2.ZERO,"recoil":0,"spawn_pos":pos,"target_lantern_id":""})
 
 func add_drifter(identity: String, pos: Vector3) -> void:
     drifters.append({"id":identity,"pos":pos,"state":"idle","chase_ticks":0,"stun_ticks":0,"steal_cooldown":0,"spawn_pos":pos})
@@ -239,6 +250,7 @@ func apply_scenario(scenario: Dictionary) -> void:
         var p: Dictionary = scenario["player"]
         if p.has("pos"): player_pos = vec3_from_array(p["pos"])
         if p.has("carried"): carried = int(p["carried"])
+        if p.has("successful_lights"): successful_lights = int(p["successful_lights"])
         if p.has("flames"): flames = int(p["flames"])
         if p.has("vel"): player_velocity_y = float(p["vel"][1])
         if p.has("grounded"): grounded = bool(p["grounded"])
@@ -256,6 +268,14 @@ func apply_scenario(scenario: Dictionary) -> void:
                     if update.has("pos"): lantern["pos"] = vec3_from_array(update["pos"])
                     if update.has("lit"): lantern["lit"] = bool(update["lit"])
                     if update.has("deposited"): lantern["deposited"] = int(update["deposited"])
+                    if update.has("ever_lit"): lantern["ever_lit"] = bool(update["ever_lit"])
+                    if update.has("relit_count"): lantern["relit_count"] = int(update["relit_count"])
+                    if update.has("fuel"):
+                        lantern["fuel_units"] = clampi(int(round(float(update["fuel"])*60.0)),0,FUEL_MAX_UNITS)
+                    elif update.has("lit") and bool(update["lit"]):
+                        lantern["fuel_units"] = FUEL_MAX_UNITS
+                    if bool(lantern["lit"]) and not update.has("ever_lit"): lantern["ever_lit"] = true
+                    lantern["fuel"] = float(lantern["fuel_units"])/60.0
     random_motes = bool(scenario.get("random_motes",true))
     random_shades = bool(scenario.get("random_shades",true))
     random_drifters = bool(scenario.get("random_drifters",true))
@@ -280,7 +300,7 @@ func apply_scenario(scenario: Dictionary) -> void:
             idx += 1
             add_shade(str(shade.get("id","S"+str(idx))),vec3_from_array(shade["pos"]))
             var new_shade: Dictionary = shades.back()
-            for property in ["state","stun_ticks","push_ticks","recoil"]:
+            for property in ["state","stun_ticks","push_ticks","recoil","target_lantern_id"]:
                 if shade.has(property): new_shade[property] = shade[property]
     if scenario.has("drifters"):
         drifters.clear()
@@ -407,7 +427,7 @@ func _move_player(move_input: Vector2, yaw: float, buttons: Dictionary) -> void:
 
 func _pickup() -> void:
     var i: int = 0
-    while i < motes.size() and carried < CARRY_CAPACITY:
+    while i < motes.size() and carried < get_capacity():
         var m: Dictionary = motes[i]
         if distance_xz(player_pos,m["pos"]) <= PICKUP_RADIUS and absf(player_pos.y-float(m["pos"].y)) <= PICKUP_HEIGHT:
             carried += 1
@@ -421,12 +441,50 @@ func _pickup() -> void:
             charm_active = true
             emit_event("charm_picked",{"charm_id":charm["id"],"charm_ticks":600})
 
+func get_capacity() -> int:
+    return mini(CAPACITY_MAX,10+2*successful_lights)
+
+func _fuel_visible(lantern: Dictionary) -> float:
+    return snappedf(float(int(lantern.get("fuel_units",0)))/60.0,0.1)
+
+func _sync_fuel(lantern: Dictionary) -> void:
+    lantern["fuel"] = float(int(lantern["fuel_units"]))/60.0
+
+func _extinguish(lantern: Dictionary) -> void:
+    if not bool(lantern["lit"]): return
+    lantern["lit"] = false
+    lantern["fuel_units"] = 0
+    lantern["deposited"] = 0
+    _sync_fuel(lantern)
+    emit_event("lantern_out",{"lantern_id":lantern["id"]})
+
+func _fuel_step() -> void:
+    for lantern in lanterns:
+        if not bool(lantern["lit"]): continue
+        lantern["fuel_units"] = maxi(0,int(lantern["fuel_units"])-FUEL_DECAY_UNITS)
+        _sync_fuel(lantern)
+        if int(lantern["fuel_units"]) <= 0: _extinguish(lantern)
+
+func _repel_weak_lantern_shades(lantern: Dictionary) -> void:
+    var center: Vector3 = lantern["pos"]
+    for shade in shades:
+        var pos: Vector3 = shade["pos"]
+        var distance: float = distance_xz(pos,center)
+        if distance > SAFE_RADIUS: continue
+        var direction: Vector2 = Vector2(pos.x-center.x,pos.z-center.z)
+        if direction.length() < 0.0001: direction = Vector2.RIGHT
+        direction = direction.normalized()
+        shade["pos"] = Vector3(center.x+direction.x*(SAFE_RADIUS+0.01),pos.y,center.z+direction.y*(SAFE_RADIUS+0.01))
+        shade["recoil"] = maxi(30,int(shade.get("recoil",0)))
+        if str(shade["state"]) == "drain": shade["state"] = "wander"
+        shade["target_lantern_id"] = ""
+
 func interact_lantern() -> void:
     if carried <= 0 or state != "playing": return
     var choice: Dictionary = {}
     var best: float = INF
     for lantern in lanterns:
-        if lantern["lit"]: continue
+        if bool(lantern["lit"]) and int(lantern["fuel_units"]) >= FUEL_MAX_UNITS: continue
         var pos: Vector3 = lantern["pos"]
         var distance: float = distance_xz(player_pos,pos)
         if distance <= INTERACT_RADIUS and absf(player_pos.y-pos.y) <= 2.0:
@@ -434,21 +492,41 @@ func interact_lantern() -> void:
                 choice = lantern
                 best = distance
     if choice.is_empty(): return
-    var amount: int = mini(carried,LANTERN_COST-int(choice["deposited"]))
-    if amount <= 0: return
-    carried -= amount
-    choice["deposited"] = int(choice["deposited"]) + amount
-    score += amount*SCORE_PER_DEPOSIT
-    emit_event("deposit",{"lantern_id":choice["id"],"amount":amount,"deposited":choice["deposited"]})
-    if int(choice["deposited"]) == LANTERN_COST:
+    if bool(choice["lit"]):
+        var missing: int = FUEL_MAX_UNITS-int(choice["fuel_units"])
+        var count: int = mini(carried,int(ceil(float(missing)/float(FUEL_PER_MOTE_UNITS))))
+        if count <= 0: return
+        var before: int = int(choice["fuel_units"])
+        carried -= count
+        choice["fuel_units"] = mini(FUEL_MAX_UNITS,before+count*FUEL_PER_MOTE_UNITS)
+        _sync_fuel(choice)
+        score += count*SCORE_MOTE_V12
+        emit_event("refuel",{"lantern_id":choice["id"],"amount":count,"fuel":_fuel_visible(choice)})
+        if before < FUEL_SAFE_THRESHOLD_UNITS and int(choice["fuel_units"]) >= FUEL_SAFE_THRESHOLD_UNITS:
+            _repel_weak_lantern_shades(choice)
+        return
+    var needed: int = 5 if bool(choice["ever_lit"]) else LANTERN_COST
+    var count: int = mini(carried,needed-int(choice["deposited"]))
+    if count <= 0: return
+    carried -= count
+    choice["deposited"] = int(choice["deposited"])+count
+    score += count*SCORE_MOTE_V12
+    emit_event("deposit",{"lantern_id":choice["id"],"amount":count,"deposited":choice["deposited"]})
+    if int(choice["deposited"]) >= needed:
+        var relight: bool = bool(choice["ever_lit"])
         choice["lit"] = true
-        score += SCORE_PER_LANTERN
-        emit_event("lantern_lit",{"lantern_id":choice["id"]})
-        _check_win()
+        choice["ever_lit"] = true
+        choice["fuel_units"] = FUEL_MAX_UNITS
+        _sync_fuel(choice)
+        if relight: choice["relit_count"] = int(choice["relit_count"])+1
+        score += SCORE_RELIGHT if relight else SCORE_PER_LANTERN
+        successful_lights += 1
+        emit_event("lantern_lit",{"lantern_id":choice["id"],"relight":relight})
+        _repel_weak_lantern_shades(choice)
 
 func _safe_center(pos: Vector3) -> Vector3:
     for lantern in lanterns:
-        if bool(lantern["lit"]) and distance_xz(pos,lantern["pos"]) <= SAFE_RADIUS:
+        if bool(lantern["lit"]) and int(lantern["fuel_units"]) >= FUEL_SAFE_THRESHOLD_UNITS and distance_xz(pos,lantern["pos"]) <= SAFE_RADIUS:
             return lantern["pos"]
     return Vector3(INF,INF,INF)
 
@@ -475,14 +553,16 @@ func _pulse() -> void:
     for shade in shades:
         var pos: Vector3 = shade["pos"]
         if distance_xz(pos,player_pos) <= PULSE_RADIUS and absf(pos.y-player_pos.y) <= 1.5:
+            var was_draining: bool = str(shade["state"]) == "drain"
             shade["stun_ticks"] = PULSE_STUN_TICKS
             shade["state"] = "stunned"
+            shade["target_lantern_id"] = ""
             var d: Vector2 = Vector2(pos.x-player_pos.x,pos.z-player_pos.z)
             if d.length() < 0.00001: d = Vector2.RIGHT
             shade["push_dir"] = d.normalized()
             shade["push_ticks"] = PULSE_PUSH_TICKS
             stunned.append(str(shade["id"]))
-            score += SCORE_PER_STUN
+            score += 15 if was_draining else SCORE_PER_STUN
     emit_event("pulse",{"stunned_ids":stunned,"cost":PULSE_COST})
 
 func _shade_step() -> void:
@@ -491,20 +571,81 @@ func _shade_step() -> void:
         if int(shade.get("stun_ticks",0)) > 0:
             shade["state"] = "stunned"
             continue
-        var distance: float = distance_xz(pos,player_pos)
+        if int(shade.get("recoil",0)) > 0:
+            shade["state"] = "wander"
+            continue
+        var dist_to_player: float = distance_xz(pos,player_pos)
+        if str(shade["state"]) == "drain":
+            if dist_to_player <= 6.0:
+                shade["state"] = "chase"
+                shade["target_lantern_id"] = ""
+            else:
+                var target: Dictionary = {}
+                for lantern in lanterns:
+                    if str(lantern["id"]) == str(shade.get("target_lantern_id","")):
+                        target = lantern
+                        break
+                if target.is_empty() or not bool(target["lit"]) or int(target["fuel_units"]) >= FUEL_SAFE_THRESHOLD_UNITS or distance_xz(pos,target["pos"]) > 2.0:
+                    shade["state"] = "wander"
+                    shade["target_lantern_id"] = ""
+                else:
+                    target["fuel_units"] = maxi(0,int(target["fuel_units"])-FUEL_DRAIN_UNITS)
+                    _sync_fuel(target)
+                    if sim_tick % 60 == 0:
+                        emit_event("fuel_drain",{"lantern_id":target["id"],"shade_id":shade["id"],"fuel":_fuel_visible(target)})
+                    if int(target["fuel_units"]) <= 0:
+                        _extinguish(target)
+                        shade["state"] = "wander"
+                        shade["target_lantern_id"] = ""
+                    continue
         var was_chasing: bool = str(shade["state"]) == "chase"
-        if distance > (18.0 if was_chasing else 12.0):
-            shade["state"] = "idle"
-        else:
+        if dist_to_player <= (18.0 if was_chasing else 12.0):
             shade["state"] = "chase"
-            if distance > 0.0001:
-                var dir: Vector2 = Vector2(player_pos.x-pos.x,player_pos.z-pos.z).normalized()
+            shade["target_lantern_id"] = ""
+            if dist_to_player > 0.00001:
+                var direction: Vector2 = Vector2(player_pos.x-pos.x,player_pos.z-pos.z).normalized()
                 var speed: float = 4.5 if night == 3 else SHADE_SPEED
-                pos.x += dir.x*speed*DT
-                pos.z += dir.y*speed*DT
+                pos.x += direction.x*speed*DT
+                pos.z += direction.y*speed*DT
                 pos = _project_safe(pos)
                 shade["pos"] = pos
-        if distance_xz(pos,player_pos) <= SHADE_HIT_RADIUS and absf(pos.y-player_pos.y) <= 1.5 and not is_inside_safe_zone(player_pos) and invuln_ticks == 0 and int(shade["recoil"]) == 0:
+        else:
+            shade["state"] = "wander"
+            var target: Dictionary = {}
+            var nearest: float = INF
+            for lantern in lanterns:
+                if bool(lantern["lit"]) and int(lantern["fuel_units"]) < FUEL_SAFE_THRESHOLD_UNITS:
+                    var d: float = distance_xz(pos,lantern["pos"])
+                    if d < nearest or (is_equal_approx(d,nearest) and (target.is_empty() or str(lantern["id"]) < str(target["id"]))):
+                        nearest = d
+                        target = lantern
+            if not target.is_empty():
+                shade["target_lantern_id"] = str(target["id"])
+                if nearest <= 2.0:
+                    shade["state"] = "drain"
+                else:
+                    var lantern_pos: Vector3 = target["pos"]
+                    var dir: Vector2 = Vector2(lantern_pos.x-pos.x,lantern_pos.z-pos.z).normalized()
+                    var speed: float = 4.5 if night == 3 else SHADE_SPEED
+                    pos.x += dir.x*speed*DT
+                    pos.z += dir.y*speed*DT
+                    shade["pos"] = pos
+            else:
+                shade["target_lantern_id"] = ""
+                # Fallback: wander to closest extinguished lantern.
+                for lantern in lanterns:
+                    if bool(lantern["lit"]): continue
+                    var d: float = distance_xz(pos,lantern["pos"])
+                    if d < nearest:
+                        nearest = d
+                        target = lantern
+                if not target.is_empty() and nearest > 0.25:
+                    var dark_pos: Vector3 = target["pos"]
+                    var d: Vector2 = Vector2(dark_pos.x-pos.x,dark_pos.z-pos.z).normalized()
+                    pos.x += d.x*SHADE_SPEED*0.5*DT
+                    pos.z += d.y*SHADE_SPEED*0.5*DT
+                    shade["pos"] = pos
+        if distance_xz(pos,player_pos) <= SHADE_HIT_RADIUS and absf(pos.y-player_pos.y) <= 1.5 and not is_inside_safe_zone(player_pos) and invuln_ticks == 0:
             _hurt("shade")
             shade["recoil"] = 60
             var away: Vector2 = Vector2(pos.x-player_pos.x,pos.z-player_pos.z)
@@ -615,8 +756,8 @@ func _wind_step() -> void:
         if wind_tick == 0: weather_wind = Vector2.ZERO
 
 func _check_win() -> void:
-    if get_lit_count() == lanterns.size():
-        finish_game("won","all_lit")
+    # Ticket-03: lighting all lanterns never ends a night early.
+    pass
 
 func get_lit_count() -> int:
     var count: int = 0
@@ -628,8 +769,9 @@ func finish_game(result: String, reason: String) -> void:
     if state != "playing": return
     state = result
     if result == "won":
-        score += int(floor(get_time_left()))*SCORE_PER_SECOND_LEFT
-        score += flames*SCORE_PER_FLAME_LEFT
+        for lantern in lanterns:
+            if bool(lantern["lit"]): score += 50+int(floor(float(int(lantern["fuel_units"]))/60.0))
+        score += flames*50
         score_nights += score
     emit_event("game_over",{"result":result,"reason":reason})
 
@@ -647,6 +789,7 @@ func step(move_input: Vector2, cam_yaw_deg: float = 0.0, buttons: Dictionary = {
         return
     sim_tick += 1
     _tick_timers()
+    _fuel_step()
     _wind_step()
     _move_player(move_input,cam_yaw_deg,buttons)
     if state != "playing":
@@ -658,8 +801,14 @@ func step(move_input: Vector2, cam_yaw_deg: float = 0.0, buttons: Dictionary = {
     if state == "playing": _shade_step()
     if state == "playing": _drifter_step()
     if state == "playing": _spawn_scheduled()
-    if state == "playing" and get_time_left() <= 0.0: finish_game("lost","dawn")
+    if state == "playing" and flames <= 0: finish_game("lost","no_flames")
+    if state == "playing" and get_time_left() <= 0.0:
+        var required: int = int(ceil(float(lanterns.size())*0.6))
+        if flames > 0 and get_lit_count() >= required:
+            finish_game("won","dawn_survived")
+        else:
+            finish_game("lost","dawn")
     previous_buttons = buttons.duplicate(true)
 
 func get_summary() -> Dictionary:
-    return {"tick":tick,"sim_tick":sim_tick,"night":night,"state":state,"score":score,"flames":flames,"carried":carried,"time_left_s":get_time_left(),"lit_lanterns":get_lit_count()}
+    return {"tick":tick,"sim_tick":sim_tick,"night":night,"state":state,"score":score,"flames":flames,"carried":carried,"time_left_s":get_time_left(),"lit_lanterns":get_lit_count(),"capacity":get_capacity(),"successful_lights":successful_lights}
