@@ -1,0 +1,14 @@
+﻿{
+  "random_motes": false,
+  "random_shades": false,
+  "lanterns": [
+    {"id": "L1", "pos": [5, 0, 0], "lit": false}
+  ],
+  "motes": [
+    {"id": "M1", "pos": [0, 0, 0]},
+    {"id": "M2", "pos": [2, 0, 0]}
+  ],
+  "shades": [
+    {"id": "S1", "pos": [10, 0, 0]}
+  ]
+}

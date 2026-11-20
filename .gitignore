@@ -1,10 +1,10 @@
-﻿# Godot cache
 .godot/
-
-# Python
 __pycache__/
-*.pyc
 .venv/
-
-# Temporary files
 *.tmp
+Day12_Phase1_Full.zip
+phase1-backup-*/
+godot-package/
+.godot/
+__pycache__/
+.venv/
